@@ -10,20 +10,20 @@ xmaxFit.py: fits a distribution of xmax data by histogramming into user defined 
 xmaxCompatSession.ipynb: jupyter notebook session of one run through the data
 
 
-How to run:
+## How to run:
 The most useful way is to start ipython
-# before starting be sure to have the two data files required: dump_hanlon_xmaxAcceptance_reconOnly.txt.bz2 and dump_ikeda_xmaxAcceptance.txt.bz2
-# import the main class
-import xmaxCompat
+before starting be sure to have the two data files required: dump_hanlon_xmaxAcceptance_reconOnly.txt.bz2 and dump_ikeda_xmaxAcceptance.txt.bz2
 
-# instantiate
-x = xmaxCompat.xmaxCompat()
+import the main class
+> import xmaxCompat
 
-# now using the main method, different energy bins can be examined
-x.main(18.2, 18.4)
-x.main(18.4, 18.6)
-x.main(18.6, 18.8)
+instantiate
+> x = xmaxCompat.xmaxCompat()
 
-# etc.
-# the purpose of the program is to compare two independently generated Monte Carlo data sets which are supposed to be draw from the same input distribution, then after detector effects and event reconstruction, examine if the data appear to be compatible
-# using a Cramer-von Mises test I can measure the compatibility of the distributions.
+now using the main method, different energy bins can be examined
+> x.main(18.2, 18.4)
+> x.main(18.4, 18.6)
+> x.main(18.6, 18.8)
+
+etc.
+the purpose of the program is to compare two independently generated Monte Carlo data sets which are supposed to be draw from the same input distribution, then after detector effects and event reconstruction, examine if the data appear to be compatible using a Cramer-von Mises test I can measure the compatibility of the distributions.
