@@ -68,7 +68,7 @@ class xmaxCompat:
 
         ax1.plot(funcX, funcY, linewidth=2., linestyle='dashed',
                 color='black')
-        ax1.set_xlabel('$X_{\mathrm{max}}$ (g/cm$^{2}$)')
+        ax1.set_xlabel('Hanlon $X_{\mathrm{max}}$ (g/cm$^{2}$)')
         ax1.set_ylabel('$N$')
         ax1.grid()
 
@@ -102,25 +102,25 @@ class xmaxCompat:
 
         ax2.plot(funcX, funcY, linewidth=2., linestyle='dashed',
                 color='black')
-        ax2.set_xlabel('$X_{\mathrm{max}}$ (g/cm$^{2}$)')
+        ax2.set_xlabel('Ikeda $X_{\mathrm{max}}$ (g/cm$^{2}$)')
         ax2.set_ylabel('$N$')
         ax2.grid()
 
         # now generate a sample of randomly drawn xmax from the fitted
         # distributions. this removes weighting bias
-        hxmaxpdf = self.sample(hxmf.func, hxmf.pfit, nsamp=10000,
+        hxmaxpdf = self.sample(hxmf.func, hxmf.pfit, nsamp=1000,
                 dataRange=[500., 1300.])
         ax3.hist(hxmaxpdf, bins=80, range=[500., 1300.])
-        ax3.set_xlabel('$X_{\mathrm{max}}$ (g/cm$^{2}$)')
+        ax3.set_xlabel('Hanlon $X_{\mathrm{max}}$ (g/cm$^{2}$)')
         ax3.set_ylabel('$N$')
         ax3.grid()
         
         # now generate a sample of randomly drawn xmax from the fitted
         # distributions. this removes weighting bias
-        ixmaxpdf = self.sample(ixmf.func, ixmf.pfit, nsamp=10000,
+        ixmaxpdf = self.sample(ixmf.func, ixmf.pfit, nsamp=1000,
                 dataRange=[500., 1300.])
         ax4.hist(ixmaxpdf, bins=80, range=[500., 1300.])
-        ax4.set_xlabel('$X_{\mathrm{max}}$ (g/cm$^{2}$)')
+        ax4.set_xlabel('Ikeda $X_{\mathrm{max}}$ (g/cm$^{2}$)')
         ax4.set_ylabel('$N$')
         ax4.grid()
 
@@ -156,17 +156,22 @@ class xmaxCompat:
 
         # plot ECDFs of the sampled distributions. input xmax distributions
         # aren't sorted, so provide sorted lists for plotting.
-        ax5.plot(np.sort(hxmaxpdf), cvm.ecdf_x, linewidth=2.)
+        ax5.plot(np.sort(hxmaxpdf), cvm.ecdf_x, linewidth=2., label='hanlon')
+        ax5.plot(np.sort(ixmaxpdf), cvm.ecdf_y, color='red', linewidth=2.,
+                label='ikeda')
         ax5.set_xlabel('$X_{\mathrm{max}}$ (g/cm$^{2}$)')
         ax5.set_ylabel('Cumulative probability')
+        ax5.legend()
         ax5.grid()
-        ax6.plot(np.sort(ixmaxpdf), cvm.ecdf_y, linewidth=2.)
-        ax6.set_xlabel('$X_{\mathrm{max}}$ (g/cm$^{2}$)')
-        ax6.set_ylabel('Cumulative probability')
-        ax6.grid()
-        
+        #ax6.plot(np.sort(ixmaxpdf), cvm.ecdf_y, linewidth=2.)
+        #ax6.set_xlabel('$X_{\mathrm{max}}$ (g/cm$^{2}$)')
+        #ax6.set_ylabel('Cumulative probability')
+        #ax6.grid()
+
         plt.tight_layout()
         plt.show()
+
+
 
 if __name__ == '__main__':
     xmaxCompat().main()
