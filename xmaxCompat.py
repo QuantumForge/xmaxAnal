@@ -156,11 +156,11 @@ class xmaxCompat:
 
         # plot ECDFs of the sampled distributions. input xmax distributions
         # aren't sorted, so provide sorted lists for plotting.
-        ax5.plot(np.sort(hxmaxpdf), cvm.ecdf_x)
+        ax5.plot(np.sort(hxmaxpdf), cvm.ecdf_x, linewidth=2.)
         ax5.set_xlabel('$X_{\mathrm{max}}$ (g/cm$^{2}$)')
         ax5.set_ylabel('Cumulative probability')
         ax5.grid()
-        ax6.plot(np.sort(ixmaxpdf), cvm.ecdf_y)
+        ax6.plot(np.sort(ixmaxpdf), cvm.ecdf_y, linewidth=2.)
         ax6.set_xlabel('$X_{\mathrm{max}}$ (g/cm$^{2}$)')
         ax6.set_ylabel('Cumulative probability')
         ax6.grid()
