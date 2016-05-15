@@ -22,7 +22,9 @@ instantiate
 
 now using the main method, different energy bins can be examined
 > x.main(18.2, 18.4)
+
 > x.main(18.4, 18.6)
+
 > x.main(18.6, 18.8)
 
 etc.
