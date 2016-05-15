@@ -59,24 +59,29 @@ class xmaxFit:
                 y.append(hist[i])
                 yerr.append(histErr[i])
 
+        # perform the fit
         self.pfit, self.pcov = optimize.curve_fit(self.func, x,
                 y, p0 = p0, sigma = yerr)
+
+        # compute errors and print out results
         perr_ = []
-        chi2 = 0.
+        chi2 = np.sum(self.func(x, *self.pfit))
+        print 'chi2/dof =', chi2, '/ (', len(x), ' - ', len(self.pfit), ')', \
+                '(', chi2/(len(x) - len(self.pfit)), ')'
         for i in range(len(self.pfit)):
             perr_.append(np.sqrt(self.pcov[i][i]))
-            print self.pname[i], '= ', self.pfit[i], '+/-', perr_[i]
+            print self.pname[i], '\t=\t', self.pfit[i], '+/-', perr_[i]
         self.perr = np.array(perr_)
 
-    # break up the analytical function into constiuent parts for
-    # clarity.
-    def y(self, t, t0, lambdat, sigma):
-        return (t0 - t)/lambdat - np.power(sigma/lambdat, 2.)/2.
-    def z(self, t, t0, lambdat, sigma):
-        return (t0 - t + np.power(sigma, 2.)/lambdat)/np.sqrt(2.)/sigma 
-        
     def func(self, t, n, t0, lambdat, sigma):
         """Analytical function to describe an Xmax distribution at depth t.
         Parameters are n, t0, lambdat, and sigma."""
-        return n*np.exp(self.y(t, t0, lambdat, sigma))* \
-                erfc(self.z(t, t0, lambdat, sigma))
+        # break up the analytical function into constituent parts for
+        # clarity. lambdas weren't working here??
+        def y(t, t0, lambdat, sigma):
+            return (t0 - t)/lambdat - np.power(sigma/lambdat, 2.)/2.
+        def z(t, t0, lambdat, sigma):
+            return (t0 - t + np.power(sigma, 2.)/lambdat)/np.sqrt(2.)/sigma 
+     
+        return n*np.exp(y(t, t0, lambdat, sigma))* \
+                erfc(z(t, t0, lambdat, sigma))
