@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import scipy.integrate as integrate
+import matplotlib as mpl
 
 import xmaxFit
 import cvm_2samp
@@ -43,15 +44,19 @@ class xmaxCompat:
             if (n >= nsamp):
                 return np.array(val)
 
-    def main(self):
+    def main(self, energyLow = 18.2, energyHigh = 18.4):
+        mpl.rcParams['figure.figsize'] = (20., 10.)
         fig, ((ax1, ax2), (ax3, ax4), (ax5, ax6)) = \
                 plt.subplots(3, 2, sharex=True)
-
+        
+        print 'Energy range: [', energyLow, energyHigh, '] log10(E/eV)'
         # read in hanlon xmax data. my data is unweighted
-        hdata = self.dfHanlon.xmaxThrown[(self.dfHanlon['eThrown']>=18.2) & \
-                (self.dfHanlon['eThrown']<18.4)]
+        hdata = \
+            self.dfHanlon.xmaxThrown[(self.dfHanlon['eThrown']>=energyLow) & \
+            (self.dfHanlon['eThrown']<energyHigh)]
         print 'Hanlon Xmax'
-        hxmf = xmaxFit.xmaxFit(hdata, 18.3)
+        # use the mean of energy bin to set the fit starting parameters
+        hxmf = xmaxFit.xmaxFit(hdata, (energyLow + energyHigh)/2.)
         #print hxmf.pname
         #print hxmf.pfit
         #print hxmf.perr
@@ -70,22 +75,28 @@ class xmaxCompat:
         # read in ikeda xmax data. his data is weighted, so we must weight
         # the distribution, fit it, then sample it so we can generate an
         # undistorted ECDF.
-        idata = self.dfIkeda.xmaxThrown[(self.dfIkeda['eThrown']>=18.2) & \
-                (self.dfIkeda['eThrown']<18.4) & \
+        idata = \
+          self.dfIkeda.xmaxThrown[(self.dfIkeda['eThrown']>=energyLow) & \
+                (self.dfIkeda['eThrown']<energyHigh) & \
                 (self.dfIkeda['eRecon'] > 0)]
-        iweight = self.dfIkeda.weight[(self.dfIkeda['eThrown']>=18.2) & \
-                (self.dfIkeda['eThrown']<18.4) & \
+        iweight = \
+          self.dfIkeda.weight[(self.dfIkeda['eThrown']>=energyLow) & \
+                (self.dfIkeda['eThrown']<energyHigh) & \
                 (self.dfIkeda['eRecon'] > 0)]
 
         print '\n'
         print 'Ikeda Xmax'
-        ixmf = xmaxFit.xmaxFit(idata, 18.3, weights=iweight)
+        # use the mean of energy bin to set the fit starting parameters
+        # recall Ikeda-san's data is weighted and weights must be applied here
+        # for the fit to make sense
+        ixmf = xmaxFit.xmaxFit(idata, (energyHigh + energyLow)/2.,
+                weights=iweight)
         #print ixmf.pname
         #print ixmf.pfit
         #print ixmf.perr
 
         # plot the weighted distribution and fit
-        ax2.hist(idata, bins=80, range=[500., 1300.])
+        ax2.hist(idata, bins=80, range=[500., 1300.], weights=iweight)
         funcX = np.linspace(500., 1300., 100)
         funcY = ixmf.func(funcX, *ixmf.pfit)
 
@@ -112,7 +123,6 @@ class xmaxCompat:
         ax4.set_xlabel('$X_{\mathrm{max}}$ (g/cm$^{2}$)')
         ax4.set_ylabel('$N$')
         ax4.grid()
-
 
         # means of the two sampled distributions
         mean_hxmaxpdf = np.mean(hxmaxpdf)
