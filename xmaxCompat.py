@@ -108,7 +108,7 @@ class xmaxCompat:
 
         # now generate a sample of randomly drawn xmax from the fitted
         # distributions. this removes weighting bias
-        hxmaxpdf = self.sample(hxmf.func, hxmf.pfit, nsamp=1000,
+        hxmaxpdf = self.sample(hxmf.func, hxmf.pfit, nsamp=100000,
                 dataRange=[500., 1300.])
         ax3.hist(hxmaxpdf, bins=80, range=[500., 1300.])
         ax3.set_xlabel('Hanlon $X_{\mathrm{max}}$ (g/cm$^{2}$)')
@@ -117,7 +117,7 @@ class xmaxCompat:
         
         # now generate a sample of randomly drawn xmax from the fitted
         # distributions. this removes weighting bias
-        ixmaxpdf = self.sample(ixmf.func, ixmf.pfit, nsamp=1000,
+        ixmaxpdf = self.sample(ixmf.func, ixmf.pfit, nsamp=100000,
                 dataRange=[500., 1300.])
         ax4.hist(ixmaxpdf, bins=80, range=[500., 1300.])
         ax4.set_xlabel('Ikeda $X_{\mathrm{max}}$ (g/cm$^{2}$)')
@@ -136,7 +136,7 @@ class xmaxCompat:
         # use a Cramer-von Mises 2 sample test to test the compatibility of the
         # data. there is most likely a systematic bias bewteen the distributions
         # so we may have to look at shifting them as well...
-        cvm = cvm_2samp.cvm_2samp(hxmaxpdf, ixmaxpdf - shift)
+        cvm = cvm_2samp.cvm_2samp(hxmaxpdf, ixmaxpdf + shift)
 
         # evaluate the p-value.
         # H0: hxmaxpdf and ixmaxpdf are both drawn from the same parent
