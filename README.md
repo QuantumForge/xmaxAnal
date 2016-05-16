@@ -11,8 +11,8 @@ xmaxCompatSession.ipynb: jupyter notebook session of one run through the data
 
 
 ## How to run:
-The most useful way is to start ipython
-before starting be sure to have the two data files required: *dump_hanlon_xmaxAcceptance_reconOnly.txt.bz2* and *dump_ikeda_xmaxAcceptance.txt.bz2*.
+The most useful way is to start ipython.
+Before starting be sure to have the two data files required: *dump_hanlon_xmaxAcceptance_reconOnly.txt.bz2* and *dump_ikeda_xmaxAcceptance.txt.bz2*.
 
 import the main class
 > import xmaxCompat
