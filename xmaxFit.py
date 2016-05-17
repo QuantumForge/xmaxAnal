@@ -73,7 +73,7 @@ class xmaxFit:
             print self.pname[i], '\t=\t', self.pfit[i], '+/-', perr_[i]
         self.perr = np.array(perr_)
 
-    def func(self, t, n, t0, lambdat, sigma):
+    def func(self, t, n, t0, lambdat, sigma, moment=0, mu=0.):
         """Analytical function to describe an Xmax distribution at depth t.
         Parameters are n, t0, lambdat, and sigma."""
         # break up the analytical function into constituent parts for
@@ -82,6 +82,16 @@ class xmaxFit:
             return (t0 - t)/lambdat - np.power(sigma/lambdat, 2.)/2.
         def z(t, t0, lambdat, sigma):
             return (t0 - t + np.power(sigma, 2.)/lambdat)/np.sqrt(2.)/sigma 
-     
-        return n*np.exp(y(t, t0, lambdat, sigma))* \
+       
+        f = 0. 
+        if moment == 0:
+            f = n*np.exp(y(t, t0, lambdat, sigma))* \
                 erfc(z(t, t0, lambdat, sigma))
+        elif moment == 1:
+            f = t*n*np.exp(y(t, t0, lambdat, sigma))* \
+                erfc(z(t, t0, lambdat, sigma))
+        elif moment == 2:
+            f = np.power(t - mu, 2.)*n*np.exp(y(t, t0, lambdat, sigma))* \
+                erfc(z(t, t0, lambdat, sigma))
+
+        return f

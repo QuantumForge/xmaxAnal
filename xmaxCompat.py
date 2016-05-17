@@ -22,6 +22,18 @@ class xmaxCompat:
                     'weight', 'eThrown', 'xmaxThrown', 'eRecon', 'xmaxRecon'],
                 na_values=['-1'], parse_dates=[[0, 1]])
 
+    def std_weighted(self, data, weights = None):
+        """compute the weighted standard deviation of a given set of data."""
+        if weights is None:
+            return np.std(data)
+        mu = np.average(data, weights=weights)
+        n = np.sum(np.power(data - mu, 2.)*weights)
+        d = np.sum(weights)
+        if d > 0.:
+            return np.sqrt(n/d)
+        return 0.
+        
+
     def sample(self, func, funcArgs, nsamp=1000, dataRange=[500., 1300.]):
         """Sample an xmax function by acceptance-rejection method and return
         nsamp xmax values randomly distributed by func."""
@@ -62,7 +74,7 @@ class xmaxCompat:
         #print hxmf.perr
 
         # plot weighed distribution and fit
-        ax1.hist(hdata, bins=80, range=[500., 1300.])
+        ax1.hist(hdata, bins=80, range=[500., 1300.], histtype='stepfilled')
         funcX = np.linspace(500., 1300., 100)
         funcY = hxmf.func(funcX, *hxmf.pfit)
 
@@ -85,6 +97,13 @@ class xmaxCompat:
                 (self.dfIkeda['eRecon'] > 0)]
 
         print '\n'
+        print 'Weighted distribution moments:'
+        print '<Hanlon Xmax> =', np.average(hdata), 'rms(Xmax) =', \
+                self.std_weighted(hdata)
+        print '<Ikeda Xmax> =', np.average(idata, weights=iweight), \
+                'rms(Xmax) =', self.std_weighted(idata, iweight)
+
+        print '\n'
         print 'Ikeda Xmax'
         # use the mean of energy bin to set the fit starting parameters
         # recall Ikeda-san's data is weighted and weights must be applied here
@@ -96,7 +115,8 @@ class xmaxCompat:
         #print ixmf.perr
 
         # plot the weighted distribution and fit
-        ax2.hist(idata, bins=80, range=[500., 1300.], weights=iweight)
+        ax2.hist(idata, bins=80, range=[500., 1300.], weights=iweight,
+                histtype='stepfilled')
         funcX = np.linspace(500., 1300., 100)
         funcY = ixmf.func(funcX, *ixmf.pfit)
 
@@ -108,18 +128,18 @@ class xmaxCompat:
 
         # now generate a sample of randomly drawn xmax from the fitted
         # distributions. this removes weighting bias
-        hxmaxpdf = self.sample(hxmf.func, hxmf.pfit, nsamp=100000,
+        hxmaxpdf = self.sample(hxmf.func, hxmf.pfit, nsamp=1000,
                 dataRange=[500., 1300.])
-        ax3.hist(hxmaxpdf, bins=80, range=[500., 1300.])
+        ax3.hist(hxmaxpdf, bins=80, range=[500., 1300.], histtype='stepfilled')
         ax3.set_xlabel('Hanlon $X_{\mathrm{max}}$ (g/cm$^{2}$)')
         ax3.set_ylabel('$N$')
         ax3.grid()
         
         # now generate a sample of randomly drawn xmax from the fitted
         # distributions. this removes weighting bias
-        ixmaxpdf = self.sample(ixmf.func, ixmf.pfit, nsamp=100000,
+        ixmaxpdf = self.sample(ixmf.func, ixmf.pfit, nsamp=1000,
                 dataRange=[500., 1300.])
-        ax4.hist(ixmaxpdf, bins=80, range=[500., 1300.])
+        ax4.hist(ixmaxpdf, bins=80, range=[500., 1300.], histtype='stepfilled')
         ax4.set_xlabel('Ikeda $X_{\mathrm{max}}$ (g/cm$^{2}$)')
         ax4.set_ylabel('$N$')
         ax4.grid()
@@ -132,6 +152,24 @@ class xmaxCompat:
         print ' <Hanlon Xmax> =', mean_hxmaxpdf
         print ' <Ikeda Xmax> =', mean_ixmaxpdf
         print 'shift =', shift
+
+        # means of the functions, not the samples.
+        mf, _ = integrate.quad(hxmf.func, 500., 1300.,
+                args=(hxmf.pfit[0], hxmf.pfit[1], hxmf.pfit[2], hxmf.pfit[3], 1))
+        mf_norm, _ = integrate.quad(hxmf.func, 500., 1300.,
+                args=(hxmf.pfit[0], hxmf.pfit[1], hxmf.pfit[2], hxmf.pfit[3]))
+
+        print 'hanlon mf = ', mf/mf_norm
+
+        mf, _ = integrate.quad(ixmf.func, 500., 1300.,
+                args=(ixmf.pfit[0], ixmf.pfit[1], ixmf.pfit[2], ixmf.pfit[3], 1))
+        mf_norm, _ = integrate.quad(ixmf.func, 500., 1300.,
+                args=(ixmf.pfit[0], ixmf.pfit[1], ixmf.pfit[2], ixmf.pfit[3]))
+
+        print 'ikeda mf = ', mf/mf_norm
+
+
+
 
         # use a Cramer-von Mises 2 sample test to test the compatibility of the
         # data. there is most likely a systematic bias bewteen the distributions
