@@ -21,8 +21,11 @@ class xmaxCompat:
                 delim_whitespace=True, header=None, names=['date', 'time',
                     'weight', 'eThrown', 'xmaxThrown', 'eRecon', 'xmaxRecon'],
                 na_values=['-1'], parse_dates=[[0, 1]])
-        self.hxmf = None
-        self.ixmf = None
+
+        self.hxmf = None   # xmaxFit object for Hanlon data
+        self.ixmf = None   # xmaxFit object for Ikeda data
+        self.t    = None   # distribution of CvM test statistics from sampling
+        self.p    = None   # distribution of CvM p-values from sampling
 
     def std_weighted(self, data, weights = None):
         """compute the weighted standard deviation of a given set of data."""
@@ -257,8 +260,8 @@ class xmaxCompat:
             cvm = cvm_2samp.cvm_2samp(hXmaxSamples,
                     iXmaxSamples + self.xmaxShift)
             (T, _, p) = cvm.eval()
-            self.t.append(T)
-            self.pval.append(p)
+            t_.append(T)
+            pval_.append(p)
         self.t    = np.array(t_)
         self.pval = np.array(pval_)
         return self.t, self.pval
