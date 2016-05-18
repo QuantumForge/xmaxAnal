@@ -64,7 +64,7 @@ class xmaxCompat:
         print 'Energy range: [', energyLow, energyHigh, '] log10(E/eV)'
         # read in hanlon xmax data. my data is unweighted
         hdata = \
-            self.dfHanlon.xmaxThrown[(self.dfHanlon['eThrown']>=energyLow) & \
+            self.dfHanlon.xmaxRecon[(self.dfHanlon['eThrown']>=energyLow) & \
             (self.dfHanlon['eThrown']<energyHigh)]
         print 'Hanlon Xmax'
         # use the mean of energy bin to set the fit starting parameters
@@ -88,7 +88,7 @@ class xmaxCompat:
         # the distribution, fit it, then sample it so we can generate an
         # undistorted ECDF.
         idata = \
-          self.dfIkeda.xmaxThrown[(self.dfIkeda['eThrown']>=energyLow) & \
+          self.dfIkeda.xmaxRecon[(self.dfIkeda['eThrown']>=energyLow) & \
                 (self.dfIkeda['eThrown']<energyHigh) & \
                 (self.dfIkeda['eRecon'] > 0)]
         iweight = \
@@ -116,7 +116,7 @@ class xmaxCompat:
 
         # plot the weighted distribution and fit
         ax2.hist(idata, bins=80, range=[500., 1300.], weights=iweight,
-                histtype='stepfilled')
+                histtype='stepfilled', color='red')
         funcX = np.linspace(500., 1300., 100)
         funcY = ixmf.func(funcX, *ixmf.pfit)
 
@@ -131,7 +131,7 @@ class xmaxCompat:
         hxmaxpdf = self.sample(hxmf.func, hxmf.pfit, nsamp=1000,
                 dataRange=[500., 1300.])
         ax3.hist(hxmaxpdf, bins=80, range=[500., 1300.], histtype='stepfilled')
-        ax3.set_xlabel('Hanlon $X_{\mathrm{max}}$ (g/cm$^{2}$)')
+        ax3.set_xlabel('Hanlon sampled $X_{\mathrm{max}}$ (g/cm$^{2}$)')
         ax3.set_ylabel('$N$')
         ax3.grid()
         
@@ -139,8 +139,9 @@ class xmaxCompat:
         # distributions. this removes weighting bias
         ixmaxpdf = self.sample(ixmf.func, ixmf.pfit, nsamp=1000,
                 dataRange=[500., 1300.])
-        ax4.hist(ixmaxpdf, bins=80, range=[500., 1300.], histtype='stepfilled')
-        ax4.set_xlabel('Ikeda $X_{\mathrm{max}}$ (g/cm$^{2}$)')
+        ax4.hist(ixmaxpdf, bins=80, range=[500., 1300.], histtype='stepfilled',
+                color='red')
+        ax4.set_xlabel('Ikeda sampled $X_{\mathrm{max}}$ (g/cm$^{2}$)')
         ax4.set_ylabel('$N$')
         ax4.grid()
 
@@ -155,21 +156,20 @@ class xmaxCompat:
 
         # means of the functions, not the samples.
         mf, _ = integrate.quad(hxmf.func, 500., 1300.,
-                args=(hxmf.pfit[0], hxmf.pfit[1], hxmf.pfit[2], hxmf.pfit[3], 1))
+                args=(hxmf.pfit[0], hxmf.pfit[1], hxmf.pfit[2], hxmf.pfit[3],
+                    1))
         mf_norm, _ = integrate.quad(hxmf.func, 500., 1300.,
                 args=(hxmf.pfit[0], hxmf.pfit[1], hxmf.pfit[2], hxmf.pfit[3]))
 
         print 'hanlon mf = ', mf/mf_norm
 
         mf, _ = integrate.quad(ixmf.func, 500., 1300.,
-                args=(ixmf.pfit[0], ixmf.pfit[1], ixmf.pfit[2], ixmf.pfit[3], 1))
+                args=(ixmf.pfit[0], ixmf.pfit[1], ixmf.pfit[2], ixmf.pfit[3],
+                    1))
         mf_norm, _ = integrate.quad(ixmf.func, 500., 1300.,
                 args=(ixmf.pfit[0], ixmf.pfit[1], ixmf.pfit[2], ixmf.pfit[3]))
 
         print 'ikeda mf = ', mf/mf_norm
-
-
-
 
         # use a Cramer-von Mises 2 sample test to test the compatibility of the
         # data. there is most likely a systematic bias bewteen the distributions
@@ -195,19 +195,28 @@ class xmaxCompat:
         # plot ECDFs of the sampled distributions. input xmax distributions
         # aren't sorted, so provide sorted lists for plotting.
         ax5.plot(np.sort(hxmaxpdf), cvm.ecdf_x, linewidth=2., label='hanlon')
-        ax5.plot(np.sort(ixmaxpdf), cvm.ecdf_y, color='red', linewidth=2.,
-                label='ikeda')
+        #ax5.plot(np.sort(ixmaxpdf), cvm.ecdf_y, color='red', linewidth=2.,
+        #        label='ikeda')
         ax5.set_xlabel('$X_{\mathrm{max}}$ (g/cm$^{2}$)')
         ax5.set_ylabel('Cumulative probability')
         ax5.legend()
         ax5.grid()
-        #ax6.plot(np.sort(ixmaxpdf), cvm.ecdf_y, linewidth=2.)
-        #ax6.set_xlabel('$X_{\mathrm{max}}$ (g/cm$^{2}$)')
-        #ax6.set_ylabel('Cumulative probability')
-        #ax6.grid()
+        ax6.plot(np.sort(ixmaxpdf), cvm.ecdf_y, linewidth=2., color='red')
+        ax6.set_xlabel('$X_{\mathrm{max}}$ (g/cm$^{2}$)')
+        ax6.set_ylabel('Cumulative probability')
+        ax6.grid()
 
         plt.tight_layout()
         plt.show()
+
+    def tdist():
+        """the true value of the CvM test statistic is not known because we fit
+        the xmax distributions and then sample them. repeatedly draw samples and
+        create a distribution of the CvM test statistic. we can then generate a
+        confidence interval and state with a certain percentage what is the the
+        probability the two distributions are statistically compatible."""
+        pass
+
 
 
 
