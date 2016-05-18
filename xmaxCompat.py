@@ -250,8 +250,8 @@ class xmaxCompat:
         create a distribution of the CvM test statistic. we can then generate a
         confidence interval and state with a certain percentage what is the the
         probability the two distributions are statistically compatible."""
-        self.t = []
-        self.pval = []
+        t_ = []
+        pval_ = []
         for i in range(1000):
             hXmaxSamples, iXmaxSamples = self.drawSamples(1000)
             cvm = cvm_2samp.cvm_2samp(hXmaxSamples,
@@ -259,6 +259,9 @@ class xmaxCompat:
             (T, _, p) = cvm.eval()
             self.t.append(T)
             self.pval.append(p)
+        self.t    = np.array(t_)
+        self.pval = np.array(pval_)
+        return self.t, self.pval
 
 if __name__ == '__main__':
     xmaxCompat().main()
