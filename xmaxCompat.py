@@ -21,6 +21,8 @@ class xmaxCompat:
                 delim_whitespace=True, header=None, names=['date', 'time',
                     'weight', 'eThrown', 'xmaxThrown', 'eRecon', 'xmaxRecon'],
                 na_values=['-1'], parse_dates=[[0, 1]])
+        self.hxmf = None
+        self.ixmf = None
 
     def std_weighted(self, data, weights = None):
         """compute the weighted standard deviation of a given set of data."""
@@ -68,7 +70,7 @@ class xmaxCompat:
             (self.dfHanlon['eThrown']<energyHigh)]
         print 'Hanlon Xmax'
         # use the mean of energy bin to set the fit starting parameters
-        hxmf = xmaxFit.xmaxFit(hdata, (energyLow + energyHigh)/2.)
+        self.hxmf = xmaxFit.xmaxFit(hdata, (energyLow + energyHigh)/2.)
         #print hxmf.pname
         #print hxmf.pfit
         #print hxmf.perr
@@ -76,7 +78,7 @@ class xmaxCompat:
         # plot weighed distribution and fit
         ax1.hist(hdata, bins=80, range=[500., 1300.], histtype='stepfilled')
         funcX = np.linspace(500., 1300., 100)
-        funcY = hxmf.func(funcX, *hxmf.pfit)
+        funcY = self.hxmf.func(funcX, *self.hxmf.pfit)
 
         ax1.plot(funcX, funcY, linewidth=2., linestyle='dashed',
                 color='black')
@@ -108,7 +110,7 @@ class xmaxCompat:
         # use the mean of energy bin to set the fit starting parameters
         # recall Ikeda-san's data is weighted and weights must be applied here
         # for the fit to make sense
-        ixmf = xmaxFit.xmaxFit(idata, (energyHigh + energyLow)/2.,
+        self.ixmf = xmaxFit.xmaxFit(idata, (energyHigh + energyLow)/2.,
                 weights=iweight)
         #print ixmf.pname
         #print ixmf.pfit
@@ -118,7 +120,7 @@ class xmaxCompat:
         ax2.hist(idata, bins=80, range=[500., 1300.], weights=iweight,
                 histtype='stepfilled', color='red')
         funcX = np.linspace(500., 1300., 100)
-        funcY = ixmf.func(funcX, *ixmf.pfit)
+        funcY = self.ixmf.func(funcX, *self.ixmf.pfit)
 
         ax2.plot(funcX, funcY, linewidth=2., linestyle='dashed',
                 color='black')
@@ -128,59 +130,82 @@ class xmaxCompat:
 
         # now generate a sample of randomly drawn xmax from the fitted
         # distributions. this removes weighting bias
-        hxmaxpdf = self.sample(hxmf.func, hxmf.pfit, nsamp=1000,
-                dataRange=[500., 1300.])
-        ax3.hist(hxmaxpdf, bins=80, range=[500., 1300.], histtype='stepfilled')
+        hXmaxSamples, iXmaxSamples = self.drawSamples(1000)
+
+        ax3.hist(hXmaxSamples, bins=80, range=[500., 1300.],
+                histtype='stepfilled')
         ax3.set_xlabel('Hanlon sampled $X_{\mathrm{max}}$ (g/cm$^{2}$)')
         ax3.set_ylabel('$N$')
         ax3.grid()
         
-        # now generate a sample of randomly drawn xmax from the fitted
-        # distributions. this removes weighting bias
-        ixmaxpdf = self.sample(ixmf.func, ixmf.pfit, nsamp=1000,
-                dataRange=[500., 1300.])
-        ax4.hist(ixmaxpdf, bins=80, range=[500., 1300.], histtype='stepfilled',
-                color='red')
+        ax4.hist(iXmaxSamples, bins=80, range=[500., 1300.],
+                histtype='stepfilled', color='red')
         ax4.set_xlabel('Ikeda sampled $X_{\mathrm{max}}$ (g/cm$^{2}$)')
         ax4.set_ylabel('$N$')
         ax4.grid()
 
-        # means of the two sampled distributions
-        mean_hxmaxpdf = np.mean(hxmaxpdf)
-        mean_ixmaxpdf = np.mean(ixmaxpdf)
-        shift = mean_hxmaxpdf - mean_ixmaxpdf
+        # means of the functions, not the samples. just to make sure the 
+        # continuous function means and rms are close to what we expect from
+        # the weighted distributions.
+        #
+        # integral for first moment
+        mf, _ = integrate.quad(self.hxmf.func, 500., 1300.,
+                args=(self.hxmf.pfit[0], self.hxmf.pfit[1], self.hxmf.pfit[2],
+                    self.hxmf.pfit[3], 1))
+        # normalization required for first moment
+        mf_norm, _ = integrate.quad(self.hxmf.func, 500., 1300.,
+                args=(self.hxmf.pfit[0], self.hxmf.pfit[1], self.hxmf.pfit[2],
+                    self.hxmf.pfit[3]))
+    
+        hMeanFunc = mf/mf_norm
         print '\n'
-        print ' <Hanlon Xmax> =', mean_hxmaxpdf
-        print ' <Ikeda Xmax> =', mean_ixmaxpdf
-        print 'shift =', shift
+        print '<Hanlon Xmax> of fit function = ', hMeanFunc
 
-        # means of the functions, not the samples.
-        mf, _ = integrate.quad(hxmf.func, 500., 1300.,
-                args=(hxmf.pfit[0], hxmf.pfit[1], hxmf.pfit[2], hxmf.pfit[3],
-                    1))
-        mf_norm, _ = integrate.quad(hxmf.func, 500., 1300.,
-                args=(hxmf.pfit[0], hxmf.pfit[1], hxmf.pfit[2], hxmf.pfit[3]))
+        # integral for first moment
+        mf, _ = integrate.quad(self.ixmf.func, 500., 1300.,
+                args=(self.ixmf.pfit[0], self.ixmf.pfit[1], self.ixmf.pfit[2],
+                    self.ixmf.pfit[3], 1))
+        # normalization required for first moment
+        mf_norm, _ = integrate.quad(self.ixmf.func, 500., 1300.,
+                args=(self.ixmf.pfit[0], self.ixmf.pfit[1], self.ixmf.pfit[2],
+                    self.ixmf.pfit[3]))
 
-        print 'hanlon mf = ', mf/mf_norm
+        iMeanFunc = mf/mf_norm
+        print '<Ikeda Xmax> of the fit function = ', iMeanFunc
 
-        mf, _ = integrate.quad(ixmf.func, 500., 1300.,
-                args=(ixmf.pfit[0], ixmf.pfit[1], ixmf.pfit[2], ixmf.pfit[3],
-                    1))
-        mf_norm, _ = integrate.quad(ixmf.func, 500., 1300.,
-                args=(ixmf.pfit[0], ixmf.pfit[1], ixmf.pfit[2], ixmf.pfit[3]))
+        # for thrown Xmax distributions there is a small systematic shift
+        # between these distributions. we want to test the hypothesis that
+        # the samples are drawn from the sample parent distribution after
+        # shifting for any small difference in the means (we believe measuring
+        # only the means in the presence of non-Gaussian tails is not sufficient
+        # information to state the compatibility of the data).
+        #
+        # measure the shift of the means from the fitted functions and shift by
+        # that amount. we should try this without shifting as well...
 
-        print 'ikeda mf = ', mf/mf_norm
+        # save the xmaxShift so that we can repeatedly draw samples and create
+        # a distribution of CvM test statistics using tdist
+        self.xmaxShift = hMeanFunc - iMeanFunc
+        print 'shift =', self.xmaxShift
 
+        # means of the two sampled distributions
+        mean_hXmaxSamples= np.mean(hXmaxSamples)
+        mean_iXmaxSamples= np.mean(iXmaxSamples)
+        #shift = mean_hXmaxSamples - mean_iXmaxSamples
+        print '\n'
+        print ' <Hanlon Xmax> of sampled distributions =', mean_hXmaxSamples
+        print ' <Ikeda Xmax> of sampled distributions =',  mean_iXmaxSamples
+        
         # use a Cramer-von Mises 2 sample test to test the compatibility of the
         # data. there is most likely a systematic bias bewteen the distributions
         # so we may have to look at shifting them as well...
-        cvm = cvm_2samp.cvm_2samp(hxmaxpdf, ixmaxpdf + shift)
+        cvm = cvm_2samp.cvm_2samp(hXmaxSamples, iXmaxSamples + self.xmaxShift)
 
         # evaluate the p-value.
-        # H0: hxmaxpdf and ixmaxpdf are both drawn from the same parent
+        # H0: hXmaxSamples and iXmaxSamples are both drawn from the same parent
         # population
-        # Ha: hxmaxpdf and ixmaxpdf are not both drawn from the same parent
-        # population
+        # Ha: hXmaxSamples and iXmaxSamples are not both drawn from the
+        # same parent population
         # cvm_2samp evaluates the test statistic for the limiting distribution
         # as the number of samples approaches infinity. report the true test
         # statistic measured and the p-value of the limiting distribution.
@@ -194,14 +219,13 @@ class xmaxCompat:
 
         # plot ECDFs of the sampled distributions. input xmax distributions
         # aren't sorted, so provide sorted lists for plotting.
-        ax5.plot(np.sort(hxmaxpdf), cvm.ecdf_x, linewidth=2., label='hanlon')
-        #ax5.plot(np.sort(ixmaxpdf), cvm.ecdf_y, color='red', linewidth=2.,
-        #        label='ikeda')
+        ax5.plot(np.sort(hXmaxSamples), cvm.ecdf_x, linewidth=2.,
+                label='hanlon')
         ax5.set_xlabel('$X_{\mathrm{max}}$ (g/cm$^{2}$)')
         ax5.set_ylabel('Cumulative probability')
         ax5.legend()
         ax5.grid()
-        ax6.plot(np.sort(ixmaxpdf), cvm.ecdf_y, linewidth=2., color='red')
+        ax6.plot(np.sort(iXmaxSamples), cvm.ecdf_y, linewidth=2., color='red')
         ax6.set_xlabel('$X_{\mathrm{max}}$ (g/cm$^{2}$)')
         ax6.set_ylabel('Cumulative probability')
         ax6.grid()
@@ -209,16 +233,32 @@ class xmaxCompat:
         plt.tight_layout()
         plt.show()
 
-    def tdist():
+    def drawSamples(self, nsamp = 1000):
+        """Draw nsamp samples from the analytically fitted xmax distributions
+        (this removes weighting bias from the distributions). Return the
+        randomly sampled distributions from the Hanlon and Ikeda analytical
+        functions."""
+        hXmaxSamples = self.sample(self.hxmf.func, self.hxmf.pfit, nsamp=nsamp,
+                dataRange=[500., 1300.])
+        iXmaxSamples = self.sample(self.ixmf.func, self.ixmf.pfit, nsamp=nsamp,
+                dataRange=[500., 1300.])
+        return hXmaxSamples, iXmaxSamples
+
+    def tdist(self):
         """the true value of the CvM test statistic is not known because we fit
         the xmax distributions and then sample them. repeatedly draw samples and
         create a distribution of the CvM test statistic. we can then generate a
         confidence interval and state with a certain percentage what is the the
         probability the two distributions are statistically compatible."""
-        pass
-
-
-
+        self.t = []
+        self.pval = []
+        for i in range(1000):
+            hXmaxSamples, iXmaxSamples = self.drawSamples(1000)
+            cvm = cvm_2samp.cvm_2samp(hXmaxSamples,
+                    iXmaxSamples + self.xmaxShift)
+            (T, _, p) = cvm.eval()
+            self.t.append(T)
+            self.pval.append(p)
 
 if __name__ == '__main__':
     xmaxCompat().main()
