@@ -27,6 +27,10 @@ class xmaxCompat:
         self.t    = None   # distribution of CvM test statistics from sampling
         self.p    = None   # distribution of CvM p-values from sampling
 
+        self.hdata = None  # array of Hanlon xmax data read from the file
+        self.idata = None  # array of Ikeda xmax data read from the file
+        self.iweight = None  # array of Ikeda weights read from the file
+
     def std_weighted(self, data, weights = None):
         """compute the weighted standard deviation of a given set of data."""
         if weights is None:
@@ -68,18 +72,19 @@ class xmaxCompat:
         
         print 'Energy range: [', energyLow, energyHigh, '] log10(E/eV)'
         # read in hanlon xmax data. my data is unweighted
-        hdata = \
-            self.dfHanlon.xmaxRecon[(self.dfHanlon['eThrown']>=energyLow) & \
+        self.hdata = \
+            self.dfHanlon.xmaxThrown[(self.dfHanlon['eThrown']>=energyLow) & \
             (self.dfHanlon['eThrown']<energyHigh)]
         print 'Hanlon Xmax'
         # use the mean of energy bin to set the fit starting parameters
-        self.hxmf = xmaxFit.xmaxFit(hdata, (energyLow + energyHigh)/2.)
+        self.hxmf = xmaxFit.xmaxFit(self.hdata, (energyLow + energyHigh)/2.)
         #print hxmf.pname
         #print hxmf.pfit
         #print hxmf.perr
 
         # plot weighed distribution and fit
-        ax1.hist(hdata, bins=80, range=[500., 1300.], histtype='stepfilled')
+        ax1.hist(self.hdata, bins=80, range=[500., 1300.],
+                histtype='stepfilled')
         funcX = np.linspace(500., 1300., 100)
         funcY = self.hxmf.func(funcX, *self.hxmf.pfit)
 
@@ -92,35 +97,35 @@ class xmaxCompat:
         # read in ikeda xmax data. his data is weighted, so we must weight
         # the distribution, fit it, then sample it so we can generate an
         # undistorted ECDF.
-        idata = \
-          self.dfIkeda.xmaxRecon[(self.dfIkeda['eThrown']>=energyLow) & \
+        self.idata = \
+          self.dfIkeda.xmaxThrown[(self.dfIkeda['eThrown']>=energyLow) & \
                 (self.dfIkeda['eThrown']<energyHigh) & \
                 (self.dfIkeda['eRecon'] > 0)]
-        iweight = \
+        self.iweight = \
           self.dfIkeda.weight[(self.dfIkeda['eThrown']>=energyLow) & \
                 (self.dfIkeda['eThrown']<energyHigh) & \
                 (self.dfIkeda['eRecon'] > 0)]
 
         print '\n'
         print 'Weighted distribution moments:'
-        print '<Hanlon Xmax> =', np.average(hdata), 'rms(Xmax) =', \
-                self.std_weighted(hdata)
-        print '<Ikeda Xmax> =', np.average(idata, weights=iweight), \
-                'rms(Xmax) =', self.std_weighted(idata, iweight)
+        print '<Hanlon Xmax> =', np.average(self.hdata), 'rms(Xmax) =', \
+                self.std_weighted(self.hdata)
+        print '<Ikeda Xmax> =', np.average(self.idata, weights=self.iweight), \
+                'rms(Xmax) =', self.std_weighted(self.idata, self.iweight)
 
         print '\n'
         print 'Ikeda Xmax'
         # use the mean of energy bin to set the fit starting parameters
         # recall Ikeda-san's data is weighted and weights must be applied here
         # for the fit to make sense
-        self.ixmf = xmaxFit.xmaxFit(idata, (energyHigh + energyLow)/2.,
-                weights=iweight)
+        self.ixmf = xmaxFit.xmaxFit(self.idata, (energyHigh + energyLow)/2.,
+                weights=self.iweight)
         #print ixmf.pname
         #print ixmf.pfit
         #print ixmf.perr
 
         # plot the weighted distribution and fit
-        ax2.hist(idata, bins=80, range=[500., 1300.], weights=iweight,
+        ax2.hist(self.idata, bins=80, range=[500., 1300.], weights=self.iweight,
                 histtype='stepfilled', color='red')
         funcX = np.linspace(500., 1300., 100)
         funcY = self.ixmf.func(funcX, *self.ixmf.pfit)
@@ -133,7 +138,7 @@ class xmaxCompat:
 
         # now generate a sample of randomly drawn xmax from the fitted
         # distributions. this removes weighting bias
-        hXmaxSamples, iXmaxSamples = self.drawSamples(1000)
+        hXmaxSamples, iXmaxSamples = self.drawSamples(10000)
 
         ax3.hist(hXmaxSamples, bins=80, range=[500., 1300.],
                 histtype='stepfilled')
@@ -191,6 +196,9 @@ class xmaxCompat:
         self.xmaxShift = hMeanFunc - iMeanFunc
         print 'shift =', self.xmaxShift
 
+        # compute the shift in the modes
+        print 'shift(mode) =' np.max
+
         # means of the two sampled distributions
         mean_hXmaxSamples= np.mean(hXmaxSamples)
         mean_iXmaxSamples= np.mean(iXmaxSamples)
@@ -247,7 +255,7 @@ class xmaxCompat:
                 dataRange=[500., 1300.])
         return hXmaxSamples, iXmaxSamples
 
-    def tdist(self):
+    def tdist(self, ntrial = 1000):
         """the true value of the CvM test statistic is not known because we fit
         the xmax distributions and then sample them. repeatedly draw samples and
         create a distribution of the CvM test statistic. we can then generate a
@@ -255,7 +263,7 @@ class xmaxCompat:
         probability the two distributions are statistically compatible."""
         t_ = []
         pval_ = []
-        for i in range(1000):
+        for i in range(ntrial):
             hXmaxSamples, iXmaxSamples = self.drawSamples(1000)
             cvm = cvm_2samp.cvm_2samp(hXmaxSamples,
                     iXmaxSamples + self.xmaxShift)
